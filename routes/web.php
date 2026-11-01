@@ -4,6 +4,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CourseController;
 use App\Http\Controllers\EnrollmentController;
+use App\Http\Controllers\SubjectController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', fn () => auth()->check() ? redirect()->route('dashboard') : view('welcome'));
@@ -25,14 +26,26 @@ Route::middleware('auth')->group(function () {
         Route::get('/tai-khoan', [AdminController::class, 'users'])->name('users.index');
         Route::get('/tai-khoan/tao-moi', [AdminController::class, 'createUser'])->name('users.create');
         Route::post('/tai-khoan', [AdminController::class, 'storeUser'])->name('users.store');
+        Route::get('/tai-khoan/{user}/sua', [AdminController::class, 'editUser'])->name('users.edit');
+        Route::put('/tai-khoan/{user}', [AdminController::class, 'updateUser'])->name('users.update');
+        Route::patch('/tai-khoan/{user}/trang-thai', [AdminController::class, 'toggleUserStatus'])->name('users.status');
     });
     Route::get('/quan-ly-khoa-hoc', [CourseController::class, 'index'])->middleware('role:teacher')->name('teacher.dashboard');
+    Route::middleware('role:admin,teacher')->prefix('mon-hoc')->name('subjects.')->group(function () {
+        Route::get('/', [SubjectController::class, 'index'])->name('index');
+        Route::get('/tao-moi', [SubjectController::class, 'create'])->name('create');
+        Route::post('/', [SubjectController::class, 'store'])->name('store');
+        Route::get('/{subject}/sua', [SubjectController::class, 'edit'])->name('edit');
+        Route::put('/{subject}', [SubjectController::class, 'update'])->name('update');
+        Route::delete('/{subject}', [SubjectController::class, 'destroy'])->name('destroy');
+    });
     Route::middleware('role:admin,teacher')->prefix('khoa-hoc')->name('courses.')->group(function () {
         Route::get('/', [CourseController::class, 'index'])->name('index');
         Route::get('/tao-moi', [CourseController::class, 'create'])->name('create');
         Route::post('/', [CourseController::class, 'store'])->name('store');
         Route::get('/{course}/sua', [CourseController::class, 'edit'])->name('edit');
         Route::put('/{course}', [CourseController::class, 'update'])->name('update');
+        Route::delete('/{course}', [CourseController::class, 'destroy'])->name('destroy');
         Route::get('/{course}/hoc-vien', [EnrollmentController::class, 'index'])->name('students.index');
         Route::post('/{course}/hoc-vien', [EnrollmentController::class, 'store'])->name('students.store');
         Route::delete('/{course}/hoc-vien/{enrollment}', [EnrollmentController::class, 'destroy'])->scopeBindings()->name('students.destroy');

@@ -18,10 +18,13 @@ class CourseController extends Controller
         $courses = Course::with(['subject', 'teacher'])
             ->withCount('enrollments')
             ->unless($request->user()->hasRole('admin'), fn ($query) => $query->where('teacher_id', $request->user()->id))
+            ->when($request->query('subject_id'), fn ($query, $subjectId) => $query->where('subject_id', $subjectId))
+            ->when($request->query('status'), fn ($query, $status) => $query->where('status', $status))
             ->latest()
-            ->paginate(10);
+            ->paginate(10)
+            ->withQueryString();
 
-        return view('courses.index', ['courses' => $courses]);
+        return view('courses.index', ['courses' => $courses, 'subjects' => Subject::orderBy('name')->get()]);
     }
 
     public function create(): View
@@ -68,6 +71,19 @@ class CourseController extends Controller
         }
 
         return redirect()->route('courses.index')->with('status', 'Khóa học đã được cập nhật.');
+    }
+
+    public function destroy(Course $course): RedirectResponse
+    {
+        $this->authorize('delete', $course);
+
+        $course->delete();
+
+        if ($course->cover_image) {
+            Storage::disk('public')->delete($course->cover_image);
+        }
+
+        return redirect()->route('courses.index')->with('status', 'Khóa học đã được xóa.');
     }
 
     /**
